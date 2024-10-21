@@ -1,7 +1,7 @@
 import { Blockchain, SandboxContract, TreasuryContract, internal, BlockchainSnapshot } from '@ton/sandbox';
 import { Cell, toNano, beginCell, Address } from '@ton/core';
-import { JettonWallet } from '../wrappers/JettonWallet';
-import { JettonMinter, jettonContentToCell } from '../wrappers/JettonMinter';
+import { JettonWallet } from '../wrappers/MockJettonWallet';
+import { JettonMinter, jettonContentToCell } from '../wrappers/MockJettonMinter';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
 import { randomAddress, getRandomTon, differentAddress, getRandomInt, testJettonTransfer, testJettonInternalTransfer, testJettonNotification, testJettonBurnNotification } from './utils';
@@ -33,8 +33,8 @@ describe('JettonWallet', () => {
     let defaultContent:Cell;
 
     beforeAll(async () => {
-        jwallet_code   = await compile('JettonWallet');
-        minter_code    = await compile('JettonMinter');
+        jwallet_code   = await compile('MockJettonWallet');
+        minter_code    = await compile('MockJettonMinter');
         blockchain     = await Blockchain.create();
         deployer       = await blockchain.treasury('deployer');
         notDeployer    = await blockchain.treasury('notDeployer');
@@ -102,20 +102,20 @@ describe('JettonWallet', () => {
     });
 
     // implementation detail
-    it('not a minter admin should not be able to mint jettons', async () => {
+    it('non-admin should be able to mint mock jettons', async () => {
         let initialTotalSupply = await jettonMinter.getTotalSupply();
         const deployerJettonWallet = await userWallet(deployer.address);
         let initialJettonBalance = await deployerJettonWallet.getJettonBalance();
-        const unAuthMintResult = await jettonMinter.sendMint(notDeployer.getSender(), deployer.address, toNano('777'), toNano('0.05'), toNano('1'));
+        const mintResult = await jettonMinter.sendMint(notDeployer.getSender(), deployer.address, toNano('777'), toNano('0.05'), toNano('1'));
 
-        expect(unAuthMintResult.transactions).toHaveTransaction({
+        expect(mintResult.transactions).toHaveTransaction({
             from: notDeployer.address,
             to: jettonMinter.address,
-            aborted: true,
-            exitCode: Errors.not_admin, // error::unauthorized_mint_request
+            success: true,
+            aborted: false,
         });
-        expect(await deployerJettonWallet.getJettonBalance()).toEqual(initialJettonBalance);
-        expect(await jettonMinter.getTotalSupply()).toEqual(initialTotalSupply);
+        expect(await deployerJettonWallet.getJettonBalance()).toEqual(initialJettonBalance + toNano(`777`));
+        expect(await jettonMinter.getTotalSupply()).toEqual(initialTotalSupply + toNano(`777`));
     });
 
     // Implementation detail
