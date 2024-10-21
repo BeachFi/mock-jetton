@@ -1,0 +1,7 @@
+{
+  "name": "mUSDT",
+  "description": "Mock USDT",
+  "symbol": "mUSDT",
+  "decimals": 6,
+  "image": "https://cryptologos.cc/logos/tether-usdt-logo.svg?v=035"
+}
